@@ -22,12 +22,14 @@ Nutritional Information
 from BeautifulSoup import BeautifulSoup
 import re
 import sys
+import os.path
 
 """
 #This is the debugging information so that you can have a url to play with
 #if you need to 
-url = "http://allrecipes.com/Recipe/Marbled-Pumpkin-Cheesecake/"
+#url = "http://allrecipes.com/Recipe/Marbled-Pumpkin-Cheesecake/"
 #url="http://allrecipes.com/recipe/banana-banana-bread/"
+url="http://allrecipes.com/recipe/fluffy-pancakes-2/detail.aspx?evt19=1"
 page_html_raw = urlopen(url).read()
 soup = BeautifulSoup(page_html_raw)
 """
@@ -61,22 +63,54 @@ def get_Ing(soup):
 
 #This function returns a string that has the prep time for the recipe     
 def get_Prep_Time(soup):
-    prep_Time_html=soup.find(id="prepMinsSpan")
-    holder=prep_Time_html.renderContents()
-    holder_2=holder.replace("<em>","").replace("</em>","")
-    prep_Time="Prep Time is "+holder_2
-    return prep_Time
-    
+    prep_Min_html=soup.find(id="prepMinsSpan")
+    try: 
+        holder=prep_Min_html.renderContents()    
+        min_len=holder.replace("<em>","").replace("</em>","")
+        minutes=True
+    except AttributeError:
+        minutes=False    
+    prep_Hour_html=soup.find(id="prepHoursSpan")
+    try:
+        holder=prep_Hour_html.renderContents() 
+        hour_len=holder.replace("<em>","").replace("</em>","")
+        hours=True
+    except AttributeError:
+        hours=False
+    if hours==True and minutes==True:
+        prep_Time="Prep Time is "+hour_len+" and "+min_len
+    elif hours==False and minutes==True:
+        prep_Time="Prep Time is "+min_len
+    elif hours==True and minutes==False:
+        prep_Time="Prep Time is "+hour_len
+    return prep_Time    
 #This function returns a string that has the cook time for the meal    
 def get_Cook_Time(soup):
-    cook_Time_html=soup.find(id="cookMinsSpan")
-    holder=cook_Time_html.renderContents()
-    holder_2=holder.replace("<em>","").replace("</em>","")
-    cook_Time="Cook Time is "+holder_2
+    cook_Min_html=soup.find(id="cookMinsSpan")
+    try: 
+        holder=cook_Min_html.renderContents()    
+        min_len=holder.replace("<em>","").replace("</em>","")
+        minutes=True
+    except AttributeError:
+        minutes=False    
+    cook_Hour_html=soup.find(id="cookHoursSpan")
+    try:
+        holder=cook_Hour_html.renderContents() 
+        hour_len=holder.replace("<em>","").replace("</em>","")
+        hours=True
+    except AttributeError:
+        hours=False
+    if hours==True and minutes==True:
+        cook_Time="Cook Time is "+hour_len+" and "+min_len
+    elif hours==False and minutes==True:
+        cook_Time="Cook Time is "+min_len
+    elif hours==True and minutes==False:
+        cook_Time="Cook Time is "+hour_len
     return cook_Time
    
 #This function returns a list of strings that represent each of the discrete
-#direction steps in order
+#direction steps in order. It also breaks up the directions so that each
+#sentance is considered its own step
 def get_Directions(soup):
     directions_html=soup.findAll("span", {"class" : "plaincharacterwrap break"})
     directions_list=[]
@@ -89,9 +123,11 @@ def get_Directions(soup):
             sub_directions.append(item)  
     sub_directions=filter(None,sub_directions)
     i=0
-    for item in sub_directions:
-        if item[0]==" ":
-            sub_directions[i]=item[1:len(item)]
+    for item in sub_directions:       
+        holder=item.replace("&#34;",'"')
+        if holder[0]==" ":
+            holder=holder[1:len(holder)]
+        sub_directions[i]=holder
         i=i+1;
     return sub_directions
 #This function returns a list of strings that that have the number of calories,
@@ -119,21 +155,27 @@ def get_Servings(soup):
 #This wraps the recipe information into a text file that is named after the 
 #recipe name (once that name has been normalized to ensure it is a valid file
 #name)
-def wrap(soup):
+def wrap(soup,directory):
+    #Getting the name of the recipe for usage to write to the file
     recipe_name=get_Name(soup)
+
+    #turn the recipe name into a format suitable for a file name
+    file_name=(recipe_name.replace(' ','').replace('/','').replace('?','')
+    .replace('?','').replace('%','').replace('*','').replace(':','')
+    .replace('"','').replace('<','').replace('>','').replace('.',''))
+    #completeName=os.path.join(directory,file_name,".txt")
+    print("Now Creating "+file_name)    
+    completeName=directory+file_name+".txt"
+    fo=open(completeName,'w')
+    
+    #Getting the info to write, and then writing the information
     description=get_Description(soup)
     ingredients=get_Ing(soup)
     prep_time=get_Prep_Time(soup)
     cook_time=get_Cook_Time(soup)
     directions=get_Directions(soup)
     nutrition=get_Nutrition(soup)
-    servings=get_Servings(soup)
-    #turn the recipe name into a format suitable for a file name
-    file_name=(recipe_name.replace(' ','').replace('/','').replace('?','')
-    .replace('?','').replace('%','').replace('*','').replace(':','')
-    .replace('"','').replace('<','').replace('>','').replace('.',''))
-    file_name=file_name+".txt"
-    fo=open(file_name,'w')
+    servings=get_Servings(soup)    
     fo.write(recipe_name)
     fo.write("\n")
     fo.write(description)
