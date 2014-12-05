@@ -29,7 +29,7 @@ import os.path
 #if you need to 
 #url = "http://allrecipes.com/Recipe/Marbled-Pumpkin-Cheesecake/"
 #url="http://allrecipes.com/recipe/banana-banana-bread/"
-url="http://allrecipes.com/recipe/too-much-chocolate-cake/detail.aspx?evt19=1"
+url="http://allrecipes.com/recipe/carrot-cake-iii/detail.aspx?evt19=1"
 page_html_raw = urlopen(url).read()
 soup = BeautifulSoup(page_html_raw)
 """
@@ -55,15 +55,25 @@ def get_Description(soup):
 #quantities
 def get_Ing(soup):
     try:
-        ing_amt=soup.findAll(id="lblIngAmount")  
-        ing_name=soup.findAll(id="lblIngName")
-        ing_list=[]
-        if len(ing_name)==len(ing_amt):      
-            for line in ing_amt:
-                ing_list.append(line.renderContents())
-            i=0
-            for line in ing_name:
-                ing_list[i]=ing_list[i]+' '+line.renderContents()
+        ing_pairings=soup.findAll("p", {"class" : "fl-ing"})        
+        ing_list=[]   
+        for line in ing_pairings:
+            ing_list.append(line.renderContents())
+        i=0
+        while i<len(ing_list):
+            paired=True    
+            if ing_list[i].find('<span id="lblIngAmount" class="ingredient-amount">')==-1 or ing_list[i].find('<span id="lblIngName" class="ingredient-name">')==-1:
+                paired=False
+            if  paired==False:
+                ing_list.remove(ing_list[i])
+            else:
+                holder=ing_list[i]
+                holder=holder.replace('<span id="lblIngAmount" class="ingredient-amount">','')
+                holder=holder.replace('<span id="lblIngName" class="ingredient-name">','').replace('</span>','')
+                holder=holder.replace('\n',' ')
+                holder=holder[1:len(holder)]
+                ing_list[i]=holder
+            if paired==True:
                 i=i+1
         return ing_list
     except:

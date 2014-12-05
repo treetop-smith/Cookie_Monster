@@ -82,6 +82,7 @@ while selection==False:
 #Otherwise it continues to the next page to grab more links
 print("Initiating retrival")
 nextPage=True
+recipe_count=0
 while nextPage==True and pageNum<=pageMax:
     currentPage="http://allrecipes.com/recipes/main.aspx?vm=l&evt19=1&p34=HR_ListView&Page="+str(pageNum)+"#recipes"
     page_html = urlopen(currentPage).read()
@@ -91,6 +92,7 @@ while nextPage==True and pageNum<=pageMax:
         recipe_html=urlopen(recipe_url).read()
         recipe_soup =BeautifulSoup(recipe_html)
         spatula.wrap(recipe_soup,directory)
+        recipe_count=recipe_count+1
     is_next=url_soup.find("link", {"rel" : "next"})
     nextPage=False
     try: 
@@ -100,6 +102,6 @@ while nextPage==True and pageNum<=pageMax:
     except TypeError:
         nextPage=False
  
-print("Completed!")
+print("Completed! A total of "+str(recipe_count)+" recipes were retrived")
 
     
